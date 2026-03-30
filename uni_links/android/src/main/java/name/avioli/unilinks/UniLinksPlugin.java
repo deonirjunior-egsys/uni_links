@@ -33,6 +33,8 @@ public class UniLinksPlugin
     private boolean initialIntent = true;
 
     private void handleIntent(Context context, Intent intent) {
+        if (intent == null) return;
+
         String action = intent.getAction();
         String dataString = intent.getDataString();
 
@@ -51,10 +53,6 @@ public class UniLinksPlugin
         return new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                // NOTE: assuming intent.getAction() is Intent.ACTION_VIEW
-
-                // Log.v("uni_links", String.format("received action: %s", intent.getAction()));
-
                 String dataString = intent.getDataString();
 
                 if (dataString == null) {
@@ -67,9 +65,9 @@ public class UniLinksPlugin
     }
 
     @Override
-    public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-        this.context = flutterPluginBinding.getApplicationContext();
-        register(flutterPluginBinding.getBinaryMessenger(), this);
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        this.context = binding.getApplicationContext();
+        register(binding.getBinaryMessenger(), this);
     }
 
     private static void register(BinaryMessenger messenger, UniLinksPlugin plugin) {
@@ -80,23 +78,8 @@ public class UniLinksPlugin
         eventChannel.setStreamHandler(plugin);
     }
 
-    /** Plugin registration. */
-    public static void registerWith(@NonNull PluginRegistry.Registrar registrar) {
-        // Detect if we've been launched in background
-        if (registrar.activity() == null) {
-            return;
-        }
-
-        final UniLinksPlugin instance = new UniLinksPlugin();
-        instance.context = registrar.context();
-        register(registrar.messenger(), instance);
-
-        instance.handleIntent(registrar.context(), registrar.activity().getIntent());
-        registrar.addNewIntentListener(instance);
-    }
-
     @Override
-    public void onDetachedFromEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {}
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {}
 
     @Override
     public void onListen(Object o, EventChannel.EventSink eventSink) {
@@ -121,24 +104,23 @@ public class UniLinksPlugin
 
     @Override
     public boolean onNewIntent(Intent intent) {
-        this.handleIntent(context, intent);
+        handleIntent(context, intent);
         return false;
     }
 
     @Override
-    public void onAttachedToActivity(@NonNull ActivityPluginBinding activityPluginBinding) {
-        activityPluginBinding.addOnNewIntentListener(this);
-        this.handleIntent(this.context, activityPluginBinding.getActivity().getIntent());
+    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        binding.addOnNewIntentListener(this);
+        handleIntent(context, binding.getActivity().getIntent());
     }
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {}
 
     @Override
-    public void onReattachedToActivityForConfigChanges(
-            @NonNull ActivityPluginBinding activityPluginBinding) {
-        activityPluginBinding.addOnNewIntentListener(this);
-        this.handleIntent(this.context, activityPluginBinding.getActivity().getIntent());
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        binding.addOnNewIntentListener(this);
+        handleIntent(context, binding.getActivity().getIntent());
     }
 
     @Override
